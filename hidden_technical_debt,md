@@ -1,0 +1,18 @@
+## Hidden Technical Debt in Machine Learning Systems <br>
+* author : 
+* society: Google.inc 
+* date : 
+* link : [pdf] (https://papers.nips.cc/paper/5656-hidden-technical-debt-in-machine-learning-systems.pdf)
+
+=== Abstract === 
+
+* complex models erode boundaries
+
+* data dependencies cost more than code dependencies
+* feedback loops
+* ML-system anti-patterns
+* configuration debt
+* dealing with changes in the external world
+* other areas of ML-related debt
+* Conclusions : measurung debt and paying it off
+
