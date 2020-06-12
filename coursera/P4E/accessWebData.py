@@ -55,3 +55,6 @@ txt = 'what is 12, 123,6412,1624'
 re.findall('[0-9]+',txt)
 
 int_list = list(map(int,re.findall('[0-9]+',txt)))
+
+# uniform resource locator url
+# request response cycle
