@@ -23,12 +23,14 @@ sorted by hour as shown below.
 handle = open("coursera/P4E/mbox-short.txt")
 dic = dict()
 for line in handle:
-    if not line.startswith("From"):
-        time = line[15:]
-print(time)
-
-key = sorted(dic)
-
+    line = line.rstrip()
+    if line.startswith("From "):
+        tokenize = line.split()
+        time = tokenize[5]
+        hours =  time[:2]
+        dic[hours] = dic.get(hours,0)+1
+for k,v in sorted(dic.items()):
+    print(k,v)
 
 
 
