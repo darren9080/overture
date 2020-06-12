@@ -37,6 +37,24 @@ y= re.findall('[aeiou]+',x)
 
 # assignment 11
 
+import re
+handle = open("coursera/P4E/sample.txt")
+for line in handle:
+    line = line.rstrip()
+    find_int = re.findall('[0-9]+',line)
+
+find_int
 
 
-#
+
+re.findall('[aeiou]+',line)
+
+
+txt = 'what is 12, 123,6412,1624'
+
+re.findall('[0-9]+',txt)
+
+int_list = list(map(int,re.findall('[0-9]+',txt)))
+
+# uniform resource locator url
+# request response cycle
