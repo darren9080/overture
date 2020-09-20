@@ -3,7 +3,6 @@ import numpy as np
 import re
 from collections import Counter
 
-
 movies_col =['movie_id','movie_name','genre']
 movies = pd.read_table('/Users/darrenlee/PycharmProjects/overture/data/pfda/ml-1m/movies.dat',sep = '::',header= None,names = movies_col, engine = 'python')
 
