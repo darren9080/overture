@@ -1,4 +1,4 @@
-### netfix ###
+### netflix ###
 
 Assumptions
 1. 나는 넷플릭스 직원이다
