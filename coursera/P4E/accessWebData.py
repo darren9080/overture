@@ -42,7 +42,7 @@ handle = open("coursera/P4E/sample.txt")
 for line in handle:
     line = line.rstrip()
     find_int = re.findall('[0-9]+',line)
-
+    print(find_int)
 find_int
 
 
