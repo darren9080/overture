@@ -9,9 +9,9 @@ pd.set_option('display.max_columns', 15)
 pd.set_option('display.max_colwidth', 150)
 pd.set_option('display.width', 1000)
 
-import matplotlib.font_manager as fm
-font_path = 'data/font/NanumGothic.ttf'
-fontprop = fm.FontProperties(fname=font_path,size= 12)
+# import matplotlib.font_manager as fm
+# font_path = 'data/font/NanumGothic.ttf'
+# fontprop = fm.FontProperties(fname=font_path,size= 12)
 
 #%% import data
 # google_analytics_event.csv: 웹 서비스에서 발생한 GA 이벤트 데이터
@@ -36,6 +36,7 @@ pageview = pd.read_csv('data/google_analytics_pageview.csv', sep = ',', low_memo
 '''
 event_cleaned = event.copy()
 pageview_cleaned = pageview.copy()
+
 # %% data cleaning
 ### event
 # 1. path에 '/'로 시작하지 않는 path 찾아서 앞에 '/' + path
@@ -56,10 +57,9 @@ for error in error_entry:
     for idx, category in enumerate(event_cleaned['category']):
          if category == error:
             event_cleaned['category'][idx] = f'카드:{error}'
-# 4. convert date column to datetime type
-# str date to datetime
-event_cleaned['date'] = pd.to_datetime(event_cleaned['date'], format = '%Y/%m/%d' )
-pageview_cleaned['date'] = pd.to_datetime(pageview_cleaned['date'], format = '%Y/%m/%d' )
+# 4. convert date(str) column to datetime type
+event_cleaned['date'] = pd.to_datetime(event_cleaned['date'], format = '%Y/%m/%d')
+pageview_cleaned['date'] = pd.to_datetime(pageview_cleaned['date'], format = '%Y/%m/%d')
 
 #카드사 별 카드
 event_cleaned.groupby(['card_name','card_id']).sum().reset_index()
@@ -118,7 +118,6 @@ print("전체 CTR : " + str(totalCTR)+"%")
 
 
 '''
-
 2. 전체 ctr/ 카드사별 ctr / 전체 ctr 카드 종류별 ctr 함께 plot 하기
 '''
 # categorical plot
@@ -153,7 +152,6 @@ plt.show()
 
 '''
 3.
-
 '''
 
 '''
@@ -161,11 +159,8 @@ plt.show()
 1. daily pageview 그래프
 2. total ctr, daily ctr 들어간 그래프
 3. event별 daily ctr
-
 4. 카드사/카드 별 daily ctr
-
 5.
-
 '''
 
 
@@ -203,8 +198,10 @@ plt.show()
 #        event_cleaned['service'] = '연회비 지원 카드추천 서비스'
 
 ##################################################### SERVICES ##################################################
+
+
+# %% action == '신청' df 생성 MERGE on = ["path","date"]
 # 서비스 네가지
-# %% action == '신청' df 생성 MERGE
 '''
 서비스 3가지 + 테마별 추천의 카드사/ 카드별 신청 현황
 '''
@@ -214,98 +211,104 @@ issueReqPV = pd.merge(issueReq,pageview_cleaned, on = ["path","date"], how= 'lef
 serviceList = ['Best 카드 찾기 서비스','인기카드 추천 서비스','테마별 카드추천','연회비 지원카드 추천 서비스']
 # (신청/상품노출)*100 이 가장 낮은 서비스 파악
 
+# %% subset by 상품노출
+nonReq = event_cleaned.loc[event_cleaned.action == '상품노출']
+nonReq.groupby(nonReq['card_id']).size()
+# nonReq.groupby(['card_name','card_id'])
+
 '''
 Best 카드 찾기 서비스
 1. 카드 소비 패턴 입력(/cards/questions)
 2. 추천 카드 리스트 조회(/cards/profits)
 3. 카드 상세 정보 페이지(/cards/{card_id})
 -> (/cards/questions),(/cards/profits), service = 'Best 카드 찾기 서비스'
-
 banksalad 홈페이지 접속 -> 상단 "카드"탭아래나 메인화면의 "나의 BEST 카드 찾기" 선택 -> 소비패턴 입력(/cards/questions)
--> 사용자의 소비 패턴에 맞는 카드 리스트 노출 (랭킹) (/cards/profits) -> 원하는 조건의 카드 클릭 -> 신청 선택
-=> benefits로 바뀌어야 하지 않나...ㅎ
+-> 사용자의 소비 패턴에 맞는 카드 리스트 노출 (랭킹) (/cards/profits) -> 원하는 조건의 카드 클릭 -> 신청 선택 
 '''
 
-for idx, path in enumerate(issueReqPV.path):
-    if ('/questions' or '/profits') in path:
+bestCardExposure = nonReq[nonReq['path'].str.contains('/questions')]
+bestCardReg = issueReqPV[issueReqPV['path'].str.contains('/profits')]
+bestCardExposure.groupby(['category','card_name','card_id']).size()
 
-issueReqPV
+bestCardExposure.groupby('action').size()
+bestCardReg.groupby('category').size()
 
-issueReqPV.path.value_counts().sort_values(ascending=False)
+len(bestCardReg)
+bestCardExposure.groupby(['category']).size()
 
 '''
 인기카드 추천 서비스
 1. 인기 카드 추천 리스트 조회(/cards/ranking)
 2. 카드 상세 정보 페이지(/cards/{card_id})
 => (/cards/ranking), service = '인기카드 추천 서비스'
-
 banksalad 홈페이지 접속 -> 상단 "카드"탭 아래 "인기카드 top10" 선택 ->
 -> 6개월간 인기 많은카드 리스트 top10 노출 -> 상세보기-> 카드신청
                                     -> 카드신청
-
 홈페이지 상 ranking은 top10 만 노출
 실제로는?
 '''
 
-for idx, path in enumerate(event_cleaned.path):
-    if '/ranking' in path:
-        #event_cleaned['service'] = '인기카드 추천 서비스'
-        event_cleaned[:idx]
+# 신청/ 상품노출 둘다 존재
+popularCard = event_cleaned[event_cleaned['path'].str.contains('/ranking')]
+popularCvr = popularCard.groupby(['action']).size()[1]/popularCard.groupby(['action']).size()[0]*100
 
+popularCardExposure = popularCard[popularCard['action'].str.contains('상품노출')]
+popularCardReg = popularCard[popularCard['action'].str.contains('신청')]
 
+# 신청이기 때문에 rank 정보 없음
+# popularCardReg.groupby(['rank_in_list']).size().sort_values(ascending=False)
+
+popularCardExposure.groupby(['card_name','rank_in_list','card_id']).size().sort_values(ascending=False)
+# rank_in_list
 event_cleaned.loc[event_cleaned.category == '카드:결과리스트'].rank_in_list
 event_cleaned.category.value_counts()
-
 event_cleaned.loc[event_cleaned.category == '카드:카드랭킹'].rank_in_list
-
-# rank_in_list 가 존재하는 data
-event_cleaned.loc[event_cleaned.rank_in_list]
-
 
 '''
 연회비 지원카드 추천 서비스
 1. 연회비지원 카드리스트 조회(/cards/promotion/annual-fee)
 2. 카드 상세 정보 페이지(/cards/{card_id})
 => path에 /cards/promotion/annual-fee 가 있으면 service = "연회비 지원 카드추천 서비스"
-
 banksalad 홈페이지 접속 -> 상단 "카드"탭 아래 "연회비 지원 상품" 선택 ->
 -> 연회비 지원 카드 리스트 노출 -> 상세보기-> 카드신청
                                    -> 카드신청
 '''
+annualfeeCard = event_cleaned[event_cleaned['path'].str.contains('/annual-fee')]
+annualfeeCard.groupby(['action']).size()[1]/annualfeeCard.groupby(['action']).size()[0]*100
 
-for path in event_cleaned.path:
-    if '/promotion/annual-fee' in path:
-        #event_cleaned['service'] = '연회비 지원 카드추천 서비스'
-        print('연회비 지원 카드추천 서비스')
+annualfeeCardPV = pd.merge(annualfeeCard, pageview_cleaned, on = ['date','path'],how = 'right')
+annualfeeCardPV.groupby(['card_name','card_id']).size()
 
-event_cleaned.loc[event_cleaned.category == '카드:결과리스트'].action.value_counts()
-event_cleaned.action.value_counts()
-
-event_cleaned.columns
-
-
+annualfeeCardPV.groupby(['card_name','card_id']).size()
+annualfeeCard.columns
 pageview_cleaned.groupby(['date']).size()
 
 # %% THEMES (/cards/themes/)
-
 # subset path that startswith('/cards/themes/')
-themes_df = event_cleaned[event_cleaned['path'].map(lambda x: x.startswith('/cards/themes/'))].copy()
-themes_df.groupby(['path']).size().sort_values(ascending = False).head(30)
+themeCard = event_cleaned[event_cleaned['path'].str.contains('/themes')]
+themeCard.groupby(themeCard['action']).size()
+themeCard[['theme']] = themeCard['path'].str[14:].copy()
+# Merge with PV
+themeCard = pd.merge(themeCard,pageview_cleaned, on = ["path","date"], how= 'left',suffixes=('_event', '_pv'))
 
+# theme ranking by pv
+themeRanking = themeCard.groupby(['theme'])[['theme','total_pv']].size().sort_values(ascending=False)
 
+themeCardReg = themeCard[themeCard['action'].str.contains('신청')]
+themeCardExposure = themeCard[themeCard['action'].str.contains('상품노출')]
 
+themeCardReg_df = themeCardReg.groupby(['theme']).size().reset_index()
+themeCardExposure_df = themeCardExposure.groupby(['theme'])['theme','total_pv'].sum().reset_index()
 
+themeCVR = pd.merge(themeCardReg_df,themeCardExposure_df, on  =['theme'],how = 'left')
+themeCVR['CVR'] =  (themeCVR[0]/themeCVR['total_pv'])*100
+themeCVR.sort_values(by= ['CVR'], ascending= False)
 
-# cvr trend
-#
-#
-#
-#
-#
-#
-#
+# 가장 인기 많은 theme
+themeCard.groupby(['path']).size().sort_values(ascending=False)
 
-
+# theme 별 신청자 수
+themeCard.groupby(['action','path','card_name','card_id']).size()
 
 # %% pageview plot
 #################################################################################################################
@@ -323,91 +326,18 @@ degrees = 70
 
 plt.show()
 
-
-# %% Journey 별 conversion rate
-'''
-BEST 카드 찾기
-(/)를 포함한 path가 있는 row 수
-(cards/questions/)를 포함한 path가 있는 row 수 
-(cards/profits)를 포함한 path가 있는 row 수
-
-인기카드 추천 리스트
-(/)를 포함한 path가 있는 row 수
-(cards/ranking/)를 포함한 path가 있는 row 수 
-'''
-
-
-
-
-
-# %%
-
-
-
-
-
-# 신청 수 트렌드
-
-# data table
-# 시각화는 엑셀....
-
-
-# 카드사, 카드 상품 별 신청 현황 분석
-# 카드사
-
-# card issue request에 대한 이벤트
-
-issueReq.groupby(issueReq['card_name']).size()
-
-# 각 카드별 신청자 수
-issueReq.groupby(issueReq['card_id']).size()
-
-# 각 카드사별 신청자수
-issueReq.groupby(issueReq['card_name']).size()
-
-# 카드사별/ 카드별 신청자 수
-issueReq.groupby(['card_name','card_id']).size()
-
-# %% subset by 상품노출
-nonReq = event_cleaned.loc[event_cleaned.action == '상품노출']
-nonReq.groupby(nonReq['card_id']).size()
-# nonReq.groupby(['card_name','card_id'])
-
-
-# %%  카드 상품별
-issueReq.groupby(['date','card_name','card_id']).size().reset_index()
-
-# 가설 기반 분석 검증
-
-# 카드종류 리스트
-
-
-# 카드회사 별 카드 종류 및 카드 수
-event_cleaned['card_name'].unique()
-event_cleaned.groupby(['card_name','card_id']).size().reset_index()
-event_cleaned.groupby(['card_name','card_id'])
-
-pageview_cleaned
-
-
-
-
 #%% 카드 시청 수 높이기 윈한 전략 수립
 '''
 실험 설계
 1. 가설
 ㅁㅁ 항목에서 카드 신청 수 부진의 이유는 ㅁㅁ이다.
-
 2. ㅁㅁ의 이유로 신청 수가 부진하므로 ㅁㅁ 향상을 위한 방안 모색
 3. ㅇㅇ를 하면 카드 신청 수가 늘어날 것이다. 를 증명하기 위해서는 ㅁㅁ을 하지 않았을 경우 신청자 수가 늘어나지 않는 것을 증명해야함.
 5. Conclusion
 ㅁㅁ 하지 않았을 경우 신청자수가 늘어나지 않고 적용했을 경우
 신청자 수가 늘어나는 것을 확인 할 수 있으므로
-
 ㅁㅁ을 집행하면 ㅁㅁ 항목에서의 카드 신청자수 부진을 해결할 수 있다.
-
 ㅁㅁ을 집행하기 위해서 드는 비용은 ㅁㅁ이다.
-
 '''
 # Status Quo
 
@@ -432,9 +362,7 @@ pageview.loc[pageview_cleaned.path == '/']
 '''
 5. DataCleaning + Join
 primary key
-
 path column구성
-
 '''
 
 print("분석 대상 카드 수 : " + str(len(event_cleaned.card_id.unique())))
@@ -451,13 +379,10 @@ print("분석 대상 카드사 수 : " + str(len(event_cleaned.card_name.unique(
 현재 카드 신청수가 가장 많은 날은 ㅁ일이고 당일 banksalad 홈패이지 접속자수는 ㅁ 명이다.
 접속자 수 ㅁ명 중 ㅁㅁ 경로를 통하여 카드 정보를 얻은 사람은 ㅁㅁ 명이고
 이중 ㅁㅁ 명이 신청을 하였다.
-
 신청자 수가 가장 적은 경로는 ㅁㅁ 경로이고 이탈률은 ㅁㅁ이다. 이탈이 일어난 이유가 ㅁㅁ이라고 가정했을때,
 ㅁㅁㅁㅁ를 ㅁㅁ하여 실험을 설계하였다.
 실험 과정은 다음을 따른다.
-
 그러므로 ㅁㅁ 이벤트에서 ㅁㅁ을 진행하여 카드 information page에서의 이탈률이 줄어들게하여 카드 신청자 수를 늘릴 수 있다.
-
 '''
 
 
@@ -466,108 +391,6 @@ print("분석 대상 카드사 수 : " + str(len(event_cleaned.card_name.unique(
 '''
 
 
-
-
-'''
-장표 구성
-
-pg1 타이틀
-pg2 목차
-
-
-pg3 Objective
-Governing Message
-
-
-pg4 Feature Analysis & Data Cleaning
-Governing Message
-
-event : data의 각 feature 설명 및 클리닝 방향 설명
-
-pageview : data의 각 feature 설명 및 클리닝 방향 설명
-
-# 현황 분석 4가지
-
-
-pg5 Best 카드 찾기 서비스 분석
-Governing Message :
-1. 대상 고객
-2. 서비스 접근 경로
-
-pg6 인기카드 추천 서비스 분석
-Governing Message :
-1. 대상 고객
-2. 서비스 접근 경로
-
-pg7 연회비 지원카드 추천 서비스 분석
-Governing Message :
-1. 대상 고객
-2. 서비스 접근 경로
-
-pg8 Theme 별 분석
-Governing Message :
-
-
-각 서비스/영영별 카드 신청 현황 .action== '신청'
-1. daily, 카드사, card_id (groupby)
-
-2.
-
-
-
-# 실험 디자인
-
-pg9 Experimental Design
-Governing Message :
-
-
-
-
-실험 설계
-1. 가설
-ㅁㅁ 항목에서 카드 신청 수 부진의 이유는 ㅁㅁ이다.
-
-2.ㅁㅁ의 이유로 신청 수가 부진하므로 ㅁㅁ 향상을 위한 방안 모색
-3. ㅇㅇ를 하면 카드 신청 수가 늘어날 것이다. 를 증명하기 위해서는 ㅁㅁ을 하지 않았을 경우 신청자 수가 늘어나지 않는 것을 증명해야함.
-5. Conclusion
-ㅁㅁ 하지 않았을 경우 신청자수가 늘어나지 않고 적용했을 경우
-신청자 수가 늘어나는 것을 확인 할 수 있으므로
-
-ㅁㅁ을 집행하면 ㅁㅁ 항목에서의 카드 신청자수 부진을 해결할 수 있다.
-
-ㅁㅁ을 집행하기 위해서 드는 비용은 ㅁㅁ이다.
-
-
-pg10 Validation Process
-Governing Message :
-
-pg11 Conclusion and further improvements
-Governing Message :
-
-#further improvement
-방문자 별 funnel 분석을 통해 심층 페이지 이동간 이탈율 분석 가능 ->
-유입 채널 별 분석
-app web 비교
-
-'''
-
-
-'''
-고덱 시나리오
-1. 타이틀
-2. Approach
-- objective
--
-
-3. Conclusion
-
-4. Further improvement
-5. Service 별 유저 journey
-6. 전환 분석
-7.
-'''
-
-# 가설 -> 전제조건 -> 분석 -> 결론 -> 검증
 
 
 # Assumption -> Hypothesis -> Analysis -> Conclusion -> Validation
