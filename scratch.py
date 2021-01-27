@@ -57,12 +57,17 @@ for error in error_entry:
     for idx, category in enumerate(event_cleaned['category']):
          if category == error:
             event_cleaned['category'][idx] = f'카드:{error}'
-# 4. convert date(str) column to datetime type
+# 3. convert date(str) column to datetime type
 event_cleaned['date'] = pd.to_datetime(event_cleaned['date'], format = '%Y/%m/%d')
 pageview_cleaned['date'] = pd.to_datetime(pageview_cleaned['date'], format = '%Y/%m/%d')
 
+pd.options.display.float_format = '{:.0f}'.format
+
 #카드사 별 카드
-event_cleaned.groupby(['card_name','card_id']).sum().reset_index()
+# {카드사_카드번호}
+event_cleaned['card'] = event_cleaned['card_name'] + '_' + event_cleaned['card_id'].astype(str)
+event_cleaned.groupby(['card_name','card']).size().reset_index()
+
 ### pageview
 # 1. path에 '/'로 시작하지 않는 path 찾아서 앞에 '/' + path
 pageview_cleaned.loc[~pageview_cleaned['path'].apply(lambda x : x.startswith('/'))].path
@@ -73,14 +78,12 @@ for idx, path in enumerate(pageview_cleaned.path):
 pageview_cleaned.loc[~pageview_cleaned['path'].apply(lambda x : x.startswith('/'))].path
 # @todo : /cards/aaa'></issue 해결하기
 # 해당 페이지뷰가 얼마나 자주 나왔는지 카운트
-pageview_cleaned.groupby(['date','path']).count()
-pageview_cleaned.info()
-event_cleaned.info()
+PV = pageview_cleaned.groupby(['path']).sum().reset_index()
 
 # 카드사 별 카드 count
 event_cleaned.groupby(['card_name','card_id']).size()
-
 cardNameList = event_cleaned.card_name.unique()
+
 ############################################
 ############# CLEANING DONE ################
 ############################################
@@ -94,7 +97,6 @@ pr1Report = sv.analyze(event_cleaned)
 pr2Report = sv.analyze(pageview_cleaned)
 pr1Report.show_html('./sweetviz_eventEda.html')
 pr2Report.show_html('./sweetviz_pageviewEda.html')
-
 # %% visual
 pageview_cleaned.columns
 pageview_cleaned.groupby(["path","date"]).count()['total'].plot()
@@ -112,42 +114,34 @@ print("전체 CTR : " + str(totalCTR)+"%")
 # 일별 ctr 구하고 각 이벤트/카드사/ 카드상품 별 ctr 계산해서 daily ctr 이하인 항목만 subset하고 추가 eda
 # dailyCTR = event_cleaned.groupby(['date','action']).size()
 
-'''
-1. 전체 ctr 일별 ctr 함께 plot
-'''
-
-
-'''
-2. 전체 ctr/ 카드사별 ctr / 전체 ctr 카드 종류별 ctr 함께 plot 하기
-'''
 # categorical plot
-
-sns.catplot(x="card_name", kind = 'point', data= event_cleaned)
-plt.show()
-
-sns.catplot(x = 'date', y ='card_id', kind = 'point', data = event_cleaned)
-plt.show()
-
-
-# method2
-fig, ax = plt.subplots()
-for key,data in event_cleaned.groupby('card_name'):
-  data.plot(x='date',y = 'total', ax= ax, label=key)
-
-plt.ylabel('card_name')
-plt.show()
+#
+# sns.catplot(x="card_name", kind = 'point', data= event_cleaned)
+# plt.show()
+#
+# sns.catplot(x = 'date', y ='card_id', kind = 'point', data = event_cleaned)
+# plt.show()
+#
+#
+# # method2
+# fig, ax = plt.subplots()
+# for key,data in event_cleaned.groupby('card_name'):
+#   data.plot(x='date',y = 'total', ax= ax, label=key)
+#
+# plt.ylabel('card_name')
+# plt.show()
 
 #####
 
-event_cleaned.columns
-event_cleaned.groupby(['date','action','card_name','card_id']).size()
-
-plt.plot(event_cleaned.groupby(['date']), event_cleaned['card_id'])
-xlab = 'pa'
-ylab = 'date'
-title = 'Pageview Per Day'
-
-plt.show()
+# event_cleaned.columns
+# event_cleaned.groupby(['date','action','card_name','card_id']).size()
+#
+# plt.plot(event_cleaned.groupby(['date']), event_cleaned['card_id'])
+# xlab = 'pa'
+# ylab = 'date'
+# title = 'Pageview Per Day'
+#
+# plt.show()
 
 
 '''
@@ -288,8 +282,12 @@ pageview_cleaned.groupby(['date']).size()
 themeCard = event_cleaned[event_cleaned['path'].str.contains('/themes')]
 themeCard.groupby(themeCard['action']).size()
 themeCard[['theme']] = themeCard['path'].str[14:].copy()
+
+themeCard.groupby(['path']).size()
+
 # Merge with PV
-themeCard = pd.merge(themeCard,pageview_cleaned, on = ["path","date"], how= 'left',suffixes=('_event', '_pv'))
+themeCard = pd.merge(themeCard,PV, on = ["path"], how= 'left',suffixes=('_event', '_pv'))
+
 
 # theme ranking by pv
 themeRanking = themeCard.groupby(['theme'])[['theme','total_pv']].size().sort_values(ascending=False)
