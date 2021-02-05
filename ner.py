@@ -239,3 +239,16 @@ class Train_NER:
 if __name__ == '__main__':
     n = Train_NER()
     nlp = n.main()
+
+   
+
+# NER TESTING displacy
+# import spacy
+# from spacy import displacy
+
+# text = "When Sebastian Thrun started working on self-driving cars at Google in 2007, few people outside of the company took him seriously."
+# #nlp = spacy.load("C:/S-Core/4_Spacy_NER/NER_Training/data/Trained_NER")
+# nlp = spacy.load("en_core_web_lg")
+# doc = nlp(text)
+# spacy.displacy.render(doc, style="ent", page="true")
+# displacy.serve(doc, style="ent", page="true")
